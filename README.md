@@ -2,19 +2,39 @@
 
 讓 Codex 透過 MCP 串接 NotebookLM，把簡報製作需求直接送進 NotebookLM 產生。
 
-## 一鍵安裝
+## 一鍵安裝（貼一行就好）
 
-先下載本 repo：
+**macOS / Linux**：打開「終端機」，貼上：
 
 ```bash
-git clone （本 repo 的網址） codex-notebooklm-setup
-cd codex-notebooklm-setup
+curl -fsSL https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/install.sh | bash
+```
+
+**Windows**：打開「PowerShell」，貼上：
+
+```powershell
+irm https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/install.ps1 | iex
+```
+
+腳本會自動下載完整安裝檔並開始安裝，過程中會開啟 Chrome 視窗請你登入 Google。
+
+想先看過程再執行，加上 `--dry-run`（Windows 用 `-DryRun`）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/install.sh | bash -s -- --dry-run
+```
+
+### 或：先下載再執行
+
+```bash
+git clone https://github.com/jyuli780-rgb/notebk-cx-mcp.git
+cd notebk-cx-mcp
 ```
 
 | 你的系統 | 執行方式 |
 |---|---|
 | macOS / Linux | `./install.sh` |
-| Windows | 在檔案總管**雙擊 `install.cmd`**；或在 PowerShell 執行 `powershell -ExecutionPolicy Bypass -File .\install.ps1` |
+| Windows | 在檔案總管**雙擊 `install.cmd`** |
 | Windows（Git Bash） | `./install.sh`，會自動偵測並轉交給 `install.ps1` |
 
 系統需求：已安裝 Codex CLI、Python 3.11 以上、Google Chrome。Windows 請從 python.org 安裝 Python 並勾選「Add python.exe to PATH」，Chrome 請裝成「所有使用者」版本（登入工具只認 `C:\Program Files\Google\Chrome\Application\chrome.exe`）。

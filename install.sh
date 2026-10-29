@@ -4,6 +4,25 @@
 # 不會用 sudo、不會讀取或上傳你的憑證內容。
 set -euo pipefail
 
+REPO_ARCHIVE="${CODEX_NLM_ARCHIVE_URL:-https://github.com/jyuli780-rgb/notebk-cx-mcp/archive/refs/heads/main.tar.gz}"
+
+# 透過「curl ... | bash」單獨執行時，旁邊沒有 scripts/ 與 install.ps1，先下載完整 repo 再接手
+SELF="${BASH_SOURCE[0]:-}"
+if [ -z "$SELF" ] || [ ! -f "$(dirname "$SELF")/scripts/helper.py" ]; then
+  command -v curl >/dev/null 2>&1 || { echo "需要 curl 才能下載安裝檔。"; exit 1; }
+  command -v tar  >/dev/null 2>&1 || { echo "需要 tar 才能解壓縮安裝檔。"; exit 1; }
+  TMPDIR_NLM="$(mktemp -d)"
+  echo "下載安裝檔中 ..."
+  curl -fsSL "$REPO_ARCHIVE" | tar -xz -C "$TMPDIR_NLM" --strip-components=1 \
+    || { echo "下載失敗，請檢查網路，或改用 git clone。"; exit 1; }
+  # 管線執行時 stdin 是腳本本身，改接終端機，讓後面的互動詢問可用
+  if { : </dev/tty; } 2>/dev/null; then
+    exec bash "$TMPDIR_NLM/install.sh" "$@" </dev/tty
+  else
+    exec bash "$TMPDIR_NLM/install.sh" "$@" </dev/null
+  fi
+fi
+
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAME="notebooklm"; SKIP_INSTALL=0; SKIP_AUTH=0; DRY=0
 

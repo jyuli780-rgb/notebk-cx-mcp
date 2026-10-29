@@ -15,7 +15,31 @@ param(
 $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 $env:PYTHONUTF8 = '1'
-$Here = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Here = $PSScriptRoot
+
+# 透過「irm ... | iex」單獨執行時，旁邊沒有 scripts\ 資料夾，先下載完整 repo 再接手
+if ((-not $Here) -or (-not (Test-Path (Join-Path $Here 'scripts\helper.py')))) {
+  $archive = if ($env:CODEX_NLM_ARCHIVE_URL) { $env:CODEX_NLM_ARCHIVE_URL } else { 'https://github.com/jyuli780-rgb/notebk-cx-mcp/archive/refs/heads/main.zip' }
+  $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ('codex-nlm-' + [guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $tmp | Out-Null
+  $zip = Join-Path $tmp 'repo.zip'
+  Write-Host '下載安裝檔中 ...'
+  try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest -UseBasicParsing -Uri $archive -OutFile $zip
+    Expand-Archive -Path $zip -DestinationPath $tmp -Force
+  } catch {
+    Write-Host "  [X] 下載失敗，請檢查網路，或改用 git clone。" -ForegroundColor Red
+    exit 1
+  }
+  $sub = Get-ChildItem -Path $tmp -Directory | Select-Object -First 1
+  $childArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $sub.FullName 'install.ps1'), '-Name', $Name)
+  if ($SkipInstall) { $childArgs += '-SkipInstall' }
+  if ($SkipAuth)    { $childArgs += '-SkipAuth' }
+  if ($DryRun)      { $childArgs += '-DryRun' }
+  & powershell.exe @childArgs
+  exit $LASTEXITCODE
+}
 $Helper = Join-Path $Here 'scripts\helper.py'
 
 function Say($m)  { Write-Host ''; Write-Host ">> $m" -ForegroundColor Cyan }

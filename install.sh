@@ -4,7 +4,26 @@
 # 不會用 sudo、不會讀取或上傳你的憑證內容。
 set -euo pipefail
 
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAME="notebooklm"; SKIP_INSTALL=0; SKIP_AUTH=0; DRY=0
+
+# 在 Windows 的 Git Bash / MSYS / Cygwin 執行時，自動轉交給 install.ps1
+case "$(uname -s 2>/dev/null)" in
+  MINGW*|MSYS*|CYGWIN*)
+    PSARGS=()
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --dry-run) PSARGS+=(-DryRun); shift ;;
+        --skip-auth) PSARGS+=(-SkipAuth); shift ;;
+        --skip-install) PSARGS+=(-SkipInstall); shift ;;
+        --name) PSARGS+=(-Name "${2:?--name 需要一個名稱}"); shift 2 ;;
+        *) PSARGS+=("$1"); shift ;;
+      esac
+    done
+    echo "偵測到 Windows，改用 install.ps1 ..."
+    exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$DIR/install.ps1")" ${PSARGS[@]+"${PSARGS[@]}"}
+    ;;
+esac
 
 usage() {
   cat <<'EOF'
@@ -51,13 +70,16 @@ if [ "$(uname)" = "Darwin" ] && [ ! -d "/Applications/Google Chrome.app" ]; then
   warn "找不到 Google Chrome，第 3 步登入需要它，請先安裝。"
 fi
 
-# 依序在 PATH、pip 腳本資料夾、uv 工具資料夾找執行檔
+# 依序在 PATH、pip 腳本資料夾（含 --user）、uv 工具資料夾找執行檔
 find_bin() {
-  local b d
+  local b d x
   b="$(command -v "$1" 2>/dev/null || true)"
   if [ -n "$b" ]; then echo "$b"; return 0; fi
-  d="$("$PY" -c 'import sysconfig; print(sysconfig.get_path("scripts"))' 2>/dev/null || true)"
-  if [ -n "$d" ] && [ -x "$d/$1" ]; then echo "$d/$1"; return 0; fi
+  d="$("$PY" "$DIR/scripts/helper.py" bindirs 2>/dev/null || true)"
+  IFS=: read -ra dirs <<<"$d"
+  for x in "${dirs[@]}"; do
+    if [ -n "$x" ] && [ -x "$x/$1" ]; then echo "$x/$1"; return 0; fi
+  done
   if command -v uv >/dev/null 2>&1; then
     d="$(uv tool dir --bin 2>/dev/null || true)"
     if [ -n "$d" ] && [ -x "$d/$1" ]; then echo "$d/$1"; return 0; fi
@@ -116,32 +138,7 @@ fi
 CFG="${CODEX_HOME:-$HOME/.codex}/config.toml"
 if [ "$DRY" = 0 ] && [ -f "$CFG" ]; then
   [ -f "$CFG.bak-notebooklm" ] || cp "$CFG" "$CFG.bak-notebooklm"
-  "$PY" - "$CFG" "$NAME" <<'PYEOF'
-import sys
-cfg, name = sys.argv[1], sys.argv[2]
-lines = open(cfg, encoding="utf-8").read().split("\n")
-hdr = f"[mcp_servers.{name}]"
-try:
-    i = lines.index(hdr)
-except ValueError:
-    print("  （找不到設定區段，略過逾時設定）"); sys.exit(0)
-j = i + 1
-while j < len(lines) and not lines[j].lstrip().startswith("["):
-    j += 1
-body = "\n".join(lines[i + 1:j])
-add = []
-if "startup_timeout_sec" not in body: add.append("startup_timeout_sec = 30")
-if "tool_timeout_sec" not in body: add.append("tool_timeout_sec = 300")
-if add:
-    k = j
-    while k > i + 1 and lines[k - 1].strip() == "":
-        k -= 1
-    lines[k:k] = add
-    open(cfg, "w", encoding="utf-8").write("\n".join(lines))
-    print("  ✅ 已加入逾時設定：" + "、".join(add) + "（原檔備份為 config.toml.bak-notebooklm）")
-else:
-    print("  ✅ 逾時設定已存在")
-PYEOF
+  "$PY" "$DIR/scripts/helper.py" timeouts "$CFG" "$NAME"
 fi
 
 # ---------- 5. 驗證 ----------

@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/ins
 **Windows**：打開「PowerShell」，貼上這一行，按 Enter：
 
 ```powershell
-irm https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/get.ps1 | iex
 ```
 
 > 想先看看會做什麼、但不真的安裝？在指令後面加上 `--dry-run`（Windows 為 `-DryRun`），詳見下方「進階選項」。
@@ -93,6 +93,12 @@ Windows 安裝 Python 時，請到 [python.org](https://www.python.org/downloads
 curl -fsSL https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/install.sh | bash -s -- --dry-run
 ```
 
+Windows 要加選項時，改用這種寫法（以 `-DryRun` 為例）：
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/get.ps1))) -DryRun
+```
+
 也可以先下載再執行：
 
 ```bash
@@ -108,6 +114,7 @@ cd notebk-cx-mcp
 | 檔案 | 說明 |
 |---|---|
 | `install.sh` | macOS / Linux 安裝腳本（在 Windows 的 Git Bash 執行時，會自動轉交給 `install.ps1`） |
+| `get.ps1` | Windows 一行安裝入口（純英文檔案，負責下載完整專案後交給 `install.ps1`） |
 | `install.ps1` | Windows 安裝腳本 |
 | `install.cmd` | Windows 雙擊入口 |
 | `scripts/helper.py` | 兩個系統共用的小工具（找執行檔位置、補逾時設定） |

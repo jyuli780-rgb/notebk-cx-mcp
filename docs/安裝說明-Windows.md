@@ -26,12 +26,18 @@ py -3 --version
 ## 二、用一行指令安裝（推薦）
 
 ```powershell
-irm https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/get.ps1 | iex
 ```
 
 跑完請直接跳到「六、重開 Codex 並測試」。
 
 登入 Google 時，PowerShell 會顯示 `NOT LOGGED IN`，同時彈出一個專用的 Chrome 視窗。請在那個視窗登入你的 Google 帳號，直到看見 NotebookLM 首頁。出現 `SUCCESS`、視窗自動關閉，就代表登入完成。
+
+若要加選項（例如只看會做什麼的 `-DryRun`），改用：
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/get.ps1))) -DryRun
+```
 
 **另一種方式：** 先 clone 或下載本專案，在檔案總管**雙擊 `install.cmd`**。
 

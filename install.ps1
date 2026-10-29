@@ -17,28 +17,11 @@ try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 $env:PYTHONUTF8 = '1'
 $Here = $PSScriptRoot
 
-# 透過「irm ... | iex」單獨執行時，旁邊沒有 scripts\ 資料夾，先下載完整 repo 再接手
+# This script needs its sibling files (scripts\helper.py). Do not pipe it into iex; use get.ps1 instead.
 if ((-not $Here) -or (-not (Test-Path (Join-Path $Here 'scripts\helper.py')))) {
-  $archive = if ($env:CODEX_NLM_ARCHIVE_URL) { $env:CODEX_NLM_ARCHIVE_URL } else { 'https://github.com/jyuli780-rgb/notebk-cx-mcp/archive/refs/heads/main.zip' }
-  $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ('codex-nlm-' + [guid]::NewGuid().ToString('N'))
-  New-Item -ItemType Directory -Path $tmp | Out-Null
-  $zip = Join-Path $tmp 'repo.zip'
-  Write-Host '下載安裝檔中 ...'
-  try {
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Invoke-WebRequest -UseBasicParsing -Uri $archive -OutFile $zip
-    Expand-Archive -Path $zip -DestinationPath $tmp -Force
-  } catch {
-    Write-Host "  [X] 下載失敗，請檢查網路，或改用 git clone。" -ForegroundColor Red
-    exit 1
-  }
-  $sub = Get-ChildItem -Path $tmp -Directory | Select-Object -First 1
-  $childArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $sub.FullName 'install.ps1'), '-Name', $Name)
-  if ($SkipInstall) { $childArgs += '-SkipInstall' }
-  if ($SkipAuth)    { $childArgs += '-SkipAuth' }
-  if ($DryRun)      { $childArgs += '-DryRun' }
-  & powershell.exe @childArgs
-  exit $LASTEXITCODE
+  Write-Host '[X] Please use:  irm https://raw.githubusercontent.com/jyuli780-rgb/notebk-cx-mcp/main/get.ps1 | iex' -ForegroundColor Red
+  Write-Host '    or run install.cmd / install.ps1 from inside the downloaded project folder.' -ForegroundColor Red
+  exit 1
 }
 $Helper = Join-Path $Here 'scripts\helper.py'
 
